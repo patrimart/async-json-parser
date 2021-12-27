@@ -1,30 +1,6 @@
-# Async JSON Parser
+MIT License
 
-[![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/patrimart/async-json-parser/blob/main/LICENSE)
-[![npm version](https://img.shields.io/npm/v/async-json-parser.svg?style=flat)](https://www.npmjs.com/package/async-json-parser)
-
-## Installation
-
-### npm
-
-```bash
-npm install async-json-parser --save
-```
-
-### yarn
-
-```bash
-yarn add async-json-parser
-```
-
-
-
-
----
-
-## MIT License
-
-### Copyright (c) 2022 Patrick Martin
+Copyright (c) 2022 Patrick Martin
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
