@@ -1,5 +1,5 @@
 Arguments: 
-  /usr/local/bin/node /Users/patrickmartin/.yarn/bin/yarn.js add --dev @parcel/transformer-rust
+  /usr/local/bin/node /Users/patrickmartin/.yarn/bin/yarn.js add src/jsonparse/pkg
 
 PATH: 
   /Users/patrickmartin/.amplify/bin:/Users/patrickmartin/.cargo/bin:/Users/patrickmartin/.yarn/bin:/Users/patrickmartin/.config/yarn/global/node_modules/.bin:/usr/local/opt/openssl@1.1/bin:/Users/patrickmartin/.npm-global/lib:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/Library/Apple/usr/bin
@@ -14,8 +14,8 @@ Platform:
   darwin x64
 
 Trace: 
-  Error: https://registry.yarnpkg.com/@parcel%2ftransformer-rust: Not found
-      at Request.params.callback [as _callback] (/Users/patrickmartin/.yarn/lib/cli.js:67029:18)
+  Error: https://registry.yarnpkg.com/src%2fjsonparse/pkg: Request "https://registry.yarnpkg.com/src%2fjsonparse/pkg" returned a 405
+      at Request.params.callback [as _callback] (/Users/patrickmartin/.yarn/lib/cli.js:67038:18)
       at Request.self.callback (/Users/patrickmartin/.yarn/lib/cli.js:140883:22)
       at Request.emit (node:events:390:28)
       at Request.<anonymous> (/Users/patrickmartin/.yarn/lib/cli.js:141855:10)
