@@ -1,3 +1,4 @@
+mod parser;
 mod utils;
 
 #[macro_use]
