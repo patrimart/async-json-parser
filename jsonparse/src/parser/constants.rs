@@ -25,11 +25,20 @@ pub enum ParseState {
 
 #[cfg(test)]
 mod tests {
+    use crate::parser::constants::*;
 
-	
-	#[test]
+    #[test]
     fn verify_constants() {
-		let json = b"{ \"foo\": [1, 2, 3], \"bar\": true }";
-        assert_eq!(2 + 2, 4);
+        let json = b"{ \"foo\": [1, 2, 3], \"bar\": true }";
+        let mut open_bracket = 0;
+        for c in json.iter() {
+            match *c {
+                CURLY_BRACKET_OPEN => {
+                    open_bracket = open_bracket + 1;
+                }
+                _ => {}
+            }
+        }
+        assert_eq!(open_bracket, 1);
     }
 }
