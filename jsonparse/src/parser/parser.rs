@@ -1,5 +1,3 @@
-use lazy_static::__Deref;
-
 use super::constants::*;
 
 pub enum PollResponse {
@@ -9,7 +7,7 @@ pub enum PollResponse {
 }
 
 pub struct Parser {
-    path_to_array: Box<[String]>,
+    path_to_array: Vec<String>,
     state: ParseState,
     current_path: Vec<String>,
     depth_stack: Vec<u8>,
@@ -18,9 +16,9 @@ pub struct Parser {
 }
 
 impl Parser {
-    pub fn new(path_to_array: &[String]) -> Self {
+    pub fn new(path_to_array: Vec<String>) -> Self {
         Parser {
-            path_to_array: Box::new(path_to_array.clone()),
+            path_to_array,
             state: ParseState::AtStart,
             current_path: Vec::new(),
             depth_stack: Vec::new(),
