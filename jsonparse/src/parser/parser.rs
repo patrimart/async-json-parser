@@ -6,6 +6,7 @@ pub enum PollResponse {
     Done,
 }
 
+#[derive(Debug, Clone)]
 pub struct Parser {
     path_to_array: Vec<String>,
     state: ParseState,
