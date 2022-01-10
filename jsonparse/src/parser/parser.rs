@@ -8,7 +8,7 @@ pub enum PollResponse {
 
 #[derive(Debug, Clone)]
 pub struct Parser {
-    path_to_array: Vec<String>,
+    path_to_array: Option<Vec<String>>,
     state: ParseState,
     current_path: Vec<String>,
     depth_stack: Vec<u8>,
@@ -17,7 +17,7 @@ pub struct Parser {
 }
 
 impl Parser {
-    pub fn new(path_to_array: Vec<String>) -> Self {
+    pub fn new(path_to_array: Option<Vec<String>>) -> Self {
         Parser {
             path_to_array,
             state: ParseState::AtStart,
@@ -34,7 +34,7 @@ impl Parser {
         }
     }
 
-    pub fn poll(&self) -> PollResponse {
+    pub fn poll(&mut self) -> PollResponse {
         PollResponse::Pending
     }
 }
