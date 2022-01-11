@@ -5,6 +5,7 @@ pub const COMMA: u8 = b',';
 pub const CURLY_BRACKET_OPEN: u8 = b'{';
 pub const CURLY_BRACKET_CLOSE: u8 = b'}';
 pub const DOUBLE_QUOTE: u8 = b'"';
+pub const PRIMITIVE_OPEN: &[u8; 14] = b"-0123456789tfn";
 
 pub const BACK_SLASH: u8 = b'\\';
 pub const CARRIAGE_RETURN: u8 = b'\r';
@@ -19,11 +20,15 @@ pub const UTF8_4: u8 = 0b11110000; // n & UTF8_4 === UTF8_4, Skip next 3 bytes
 #[derive(Clone, Debug)]
 pub enum ParseState {
     AtStart,
+    PreKey,
     InKey,
     PostKey,
+    PreValue,
     InValue,
     PostValue,
+    PreStream,
     InStream,
+    PostStream,
     AtEnd,
 }
 
