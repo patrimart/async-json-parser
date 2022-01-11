@@ -32,6 +32,13 @@ pub enum ParseState {
     AtEnd,
 }
 
+#[derive(Clone, Debug)]
+pub enum StreamType {
+    Array,
+    Primitive,
+    Object,
+}
+
 #[cfg(test)]
 mod tests {
     use crate::parser::constants::*;

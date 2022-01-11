@@ -1,3 +1,5 @@
+use std::str;
+
 use super::{constants::*, SyntaxError};
 
 pub enum PollResponse {
@@ -58,31 +60,98 @@ impl Parser {
                     self.current_index += 4;
                     continue;
                 }
-                _ => return Some(c),
+                _ => {
+                    self.current_index += 1;
+                    return Some(c);
+                }
             }
         }
     }
 
-    fn while_at_start(&mut self) -> Result<(), SyntaxError> {
+    fn at_start(&mut self) -> Result<(), SyntaxError> {
         match self.next_char() {
             Some(c) => match c {
                 CURLY_BRACKET_OPEN => {
-                    self.current_index += 1;
                     self.state = ParseState::PreKey;
-                    return Ok(());
+                    Ok(())
                 }
                 BRACKET_OPEN => {
-                    self.current_index += 1;
-                    self.state = ParseState::InStream;
+                    if let None = self.path_to_array {
+                        self.state = ParseState::InStream;
+                        Ok(())
+                    } else {
+                        Err(SyntaxError::new(
+                            self.current_index - 1,
+                            &format!("pathToArray provided for non-object."),
+                        ))
+                    }
+                }
+                _ => Err(SyntaxError::new(
+                    self.current_index - 1,
+                    &format!("Invalid character '{}' found at start.", c),
+                )),
+            },
+            None => Ok(()),
+        }
+    }
+
+    fn pre_key(&mut self) -> Result<(), SyntaxError> {
+        match self.next_char() {
+            Some(c) => match c {
+                DOUBLE_QUOTE => {
+                    self.state = ParseState::InKey;
+                    Ok(())
+                }
+                _ => Err(SyntaxError::new(
+                    self.current_index - 1,
+                    &format!("Invalid character '{}' found at pre key. Expected (\").", c),
+                )),
+            },
+            None => Ok(()),
+        }
+    }
+
+    fn in_key(&mut self) -> Result<(), SyntaxError> {
+        let start_index = self.current_index;
+        loop {
+            match self.next_char() {
+                Some(c) => match c {
+                    DOUBLE_QUOTE => {
+                        // START: Nonsense
+                        // The path needs to push/pop based on nested objects.
+                        let end_index = self.current_index - 2;
+                        let u8_slice = &self.stream[start_index..end_index];
+                        let key = str::from_utf8(u8_slice).unwrap();
+                        self.current_path.push(key.to_string());
+                        // END: Nonsend
+                        self.state = ParseState::PostKey;
+                        return Ok(());
+                    }
+                    _ => {}
+                },
+                None => {
                     return Ok(());
                 }
-                _ => {
-                    return Err(SyntaxError::new(self.current_index, ""));
-                }
-            },
-            None => {
-                return Err(SyntaxError::new(self.current_index, ""));
             }
+        }
+    }
+
+    fn post_key(&mut self) -> Result<(), SyntaxError> {
+        match self.next_char() {
+            Some(c) => match c {
+                COLON => {
+                    self.state = ParseState::PreValue;
+                    Ok(())
+                }
+                _ => Err(SyntaxError::new(
+                    self.current_index - 1,
+                    &format!(
+                        "Invalid character '{}' found at after key. Expected (:).",
+                        c
+                    ),
+                )),
+            },
+            None => Ok(()),
         }
     }
 }
