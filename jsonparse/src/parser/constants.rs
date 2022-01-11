@@ -1,4 +1,3 @@
-pub const BACK_SLASH: u8 = b'\\';
 pub const BRACKET_OPEN: u8 = b'[';
 pub const BRACKET_CLOSE: u8 = b']';
 pub const COLON: u8 = b':';
@@ -6,6 +5,11 @@ pub const COMMA: u8 = b',';
 pub const CURLY_BRACKET_OPEN: u8 = b'{';
 pub const CURLY_BRACKET_CLOSE: u8 = b'}';
 pub const DOUBLE_QUOTE: u8 = b'"';
+
+pub const BACK_SLASH: u8 = b'\\';
+pub const CARRIAGE_RETURN: u8 = b'\r';
+pub const NEWLINE: u8 = b'\n';
+pub const TAB: u8 = b'\t';
 pub const WHITE_SPACE: u8 = b' ';
 
 pub const UTF8_2: u8 = 0b11000000; // n & UTF8_2 === UTF8_2, Skip next byte
