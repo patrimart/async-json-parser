@@ -5,7 +5,7 @@ pub const COMMA: u8 = b',';
 pub const CURLY_BRACKET_OPEN: u8 = b'{';
 pub const CURLY_BRACKET_CLOSE: u8 = b'}';
 pub const DOUBLE_QUOTE: u8 = b'"';
-pub const PRIMITIVE_OPEN: &[u8; 14] = b"-0123456789tfn";
+pub const PRIMITIVE_OPEN: [u8; 14] = *b"-0123456789tfn";
 
 pub const BACK_SLASH: u8 = b'\\';
 pub const CARRIAGE_RETURN: u8 = b'\r';

@@ -68,6 +68,15 @@ impl Parser {
         }
     }
 
+    /// Trims stream to `[current_index..]`.
+    fn trim_left_stream(&mut self) {
+        if self.stream.len() > self.current_index {
+            self.stream = self.stream.drain(self.current_index..).collect();
+        } else {
+            self.stream.clear();
+        }
+    }
+
     fn at_start(&mut self) -> Result<(), SyntaxError> {
         match self.next_char() {
             Some(c) => match c {
@@ -154,4 +163,20 @@ impl Parser {
             None => Ok(()),
         }
     }
+
+    fn pre_value(&mut self) -> Result<(), SyntaxError> {}
+
+    fn in_value(&mut self) -> Result<(), SyntaxError> {
+        let local_depth_index = self.depth_stack.len() - 1;
+    }
+
+    fn post_value(&mut self) -> Result<(), SyntaxError> {}
+
+    fn pre_stream(&mut self) -> Result<(), SyntaxError> {}
+
+    fn in_stream(&mut self) -> Result<(), SyntaxError> {}
+
+    fn post_stream(&mut self) -> Result<(), SyntaxError> {}
+
+    fn at_end(&mut self) -> Result<(), SyntaxError> {}
 }
