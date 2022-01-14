@@ -16,6 +16,7 @@ pub struct Parser {
     depth_stack: Vec<u8>,
     current_index: usize,
     stream: Vec<u8>,
+    is_in_stream: bool,
 }
 
 impl Parser {
@@ -27,6 +28,7 @@ impl Parser {
             depth_stack: Vec::new(),
             current_index: 0,
             stream: Vec::new(),
+            is_in_stream: false,
         }
     }
 
@@ -171,12 +173,6 @@ impl Parser {
     }
 
     fn post_value(&mut self) -> Result<(), SyntaxError> {}
-
-    fn pre_stream(&mut self) -> Result<(), SyntaxError> {}
-
-    fn in_stream(&mut self) -> Result<(), SyntaxError> {}
-
-    fn post_stream(&mut self) -> Result<(), SyntaxError> {}
 
     fn at_end(&mut self) -> Result<(), SyntaxError> {}
 }

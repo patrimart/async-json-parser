@@ -26,9 +26,6 @@ pub enum ParseState {
     PreValue,
     InValue,
     PostValue,
-    PreStream,
-    InStream,
-    PostStream,
     AtEnd,
 }
 
