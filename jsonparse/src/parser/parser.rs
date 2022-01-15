@@ -88,7 +88,7 @@ impl Parser {
                 }
                 BRACKET_OPEN => {
                     if let None = self.path_to_array {
-                        self.state = ParseState::InStream;
+                        self.is_in_stream = true;
                         Ok(())
                     } else {
                         Err(SyntaxError::new(
@@ -156,17 +156,51 @@ impl Parser {
                 }
                 _ => Err(SyntaxError::new(
                     self.current_index - 1,
-                    &format!(
-                        "Invalid character '{}' found at after key. Expected (:).",
-                        c
-                    ),
+                    &format!("Invalid character '{c}' found at after key. Expected (:).",),
                 )),
             },
             None => Ok(()),
         }
     }
 
-    fn pre_value(&mut self) -> Result<(), SyntaxError> {}
+    fn pre_value(&mut self) -> Result<(&[u8]), SyntaxError> {
+        match self.next_char() {
+            Some(c) => match c {
+                BRACKET_OPEN => {
+                    self.state = ParseState::InValue;
+                    Ok(())
+                }
+                CURLY_BRACKET_OPEN => {
+                    self.state = ParseState::InValue;
+                    Ok(())
+                }
+                DOUBLE_QUOTE => {
+                    self.state = ParseState::InValue;
+                    Ok(())
+                }
+                c if PRIMITIVE_OPEN.contains(&c) => {
+                    self.state = ParseState::InValue;
+                    let start_index = self.current_index;
+                    match c {
+                        b't' => { self.current_index += 3; },
+                        b'f' => { self.current_index += 4; },
+                        b'n' => { self.current_index += 3; },
+                        n => {
+                            loop {
+                                
+                            }
+                        }
+                    }
+                    Ok(())
+                }
+                _ => Err(SyntaxError::new(
+                    self.current_index - 1,
+                    &format!("Invalid character '{}' found at pre value. Expected (\").", c),
+                )),
+            },
+            None => Ok(()),
+        }
+    }
 
     fn in_value(&mut self) -> Result<(), SyntaxError> {
         let local_depth_index = self.depth_stack.len() - 1;
