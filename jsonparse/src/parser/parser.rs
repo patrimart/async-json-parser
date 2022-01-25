@@ -1,5 +1,3 @@
-use std::str;
-
 use super::{constants::*, SyntaxError};
 
 pub enum PollResponse {
@@ -13,7 +11,8 @@ pub struct Parser {
     path_to_array: Option<Vec<String>>,
     state: ParseState,
     current_path: Vec<String>,
-    depth_stack: Vec<u8>,
+    // (char, index)
+    depth_stack: Vec<(u8, usize)>,
     current_index: usize,
     stream: Vec<u8>,
     is_in_stream: bool,
@@ -79,19 +78,26 @@ impl Parser {
         }
     }
 
-    fn parse_until_eos(&mut self) -> Result<(), SyntaxError> {
+    fn push_stack(&mut self, char: u8) {
+        self.depth_stack.push((char, self.current_index));
+    }
+
+    fn pop_stack(&mut self) {
+        self.depth_stack.pop();
+    }
+
+    fn parse_until(&mut self) -> Result<(), SyntaxError> {
         loop {
             match self.next_char() {
                 Some(c) => match c {
                     DOUBLE_QUOTE => {
-                        self.depth_stack.push(c);
-
+                        self.push_stack(c);
                     }
                     BRACKET_OPEN | CURLY_BRACKET_OPEN => {
-                        self.depth_stack.push(c);
+                        self.push_stack(c);
                     }
                     BRACKET_CLOSE | CURLY_BRACKET_CLOSE => {
-                        self.depth_stack.pop();
+                        self.pop_stack();
                     }
                     _ => {
                         return Err(SyntaxError::new(
@@ -105,6 +111,15 @@ impl Parser {
                 }
             }
         }
+    }
+
+    fn handle_event(&mut self) {
+        match self.depth_stack[..] {
+            [.., (CURLY_BRACKET_OPEN, index)] => {
+
+            }
+        }
+        // TODO handle open and close events
     }
 
     // fn at_start(&mut self) -> Result<(), SyntaxError> {
