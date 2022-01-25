@@ -1,3 +1,5 @@
+use std::ops::Index;
+
 use super::{constants::*, SyntaxError};
 
 pub enum PollResponse {
@@ -90,6 +92,12 @@ impl Parser {
         loop {
             match self.next_char() {
                 Some(c) => match c {
+                    COLON => {
+                        // End of property
+                    }
+                    COMMA => {
+                        // End of array item
+                    }
                     DOUBLE_QUOTE => {
                         self.push_stack(c);
                     }
@@ -113,10 +121,21 @@ impl Parser {
         }
     }
 
-    fn handle_event(&mut self) {
+    fn handle_close_event(&mut self) {
         match self.depth_stack[..] {
-            [.., (CURLY_BRACKET_OPEN, index)] => {
-
+            [.., (token_open, start_index), (token_close, end_index), (COMMA, _)] => {
+                // End of array item.
+            }
+            [.., (DOUBLE_QUOTE, start_index), (DOUBLE_QUOTE, end_index), (COLON, index)] => {
+                // object key is [start_token, end_token]
+            }
+            // [.., (BRACKET_OPEN, index)] => {}
+            [.., (BRACKET_CLOSE, index)] => {
+                // End of array
+            }
+            // [.., (CURLY_BRACKET_OPEN, index)] => {}
+            [.., (CURLY_BRACKET_CLOSE, index)] => {
+                // End of object
             }
         }
         // TODO handle open and close events
