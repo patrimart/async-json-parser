@@ -10,26 +10,23 @@ pub enum PollResponse {
 
 #[derive(Debug, Clone)]
 pub struct Parser {
-    path_to_array: Option<Vec<String>>,
-    state: ParseState,
+    path_to_array: Vec<String>,
     current_path: Vec<String>,
-    // (char, index)
-    depth_stack: Vec<(u8, usize)>,
+    token_stack: Vec<(u8, usize)>,
     current_index: usize,
     stream: Vec<u8>,
-    is_in_stream: bool,
+    is_in_target_array: bool,
 }
 
 impl Parser {
-    pub fn new(path_to_array: Option<Vec<String>>) -> Self {
+    pub fn new(path_to_array: Vec<String>) -> Self {
         Parser {
             path_to_array,
-            state: ParseState::AtStart,
             current_path: Vec::new(),
-            depth_stack: Vec::new(),
+            token_stack: Vec::new(),
             current_index: 0,
             stream: Vec::new(),
-            is_in_stream: false,
+            is_in_target_array: false,
         }
     }
 
@@ -81,14 +78,14 @@ impl Parser {
     }
 
     fn push_stack(&mut self, char: u8) {
-        self.depth_stack.push((char, self.current_index));
+        self.token_stack.push((char, self.current_index));
     }
 
     fn pop_stack(&mut self) {
-        self.depth_stack.pop();
+        self.token_stack.pop();
     }
 
-    fn parse_until(&mut self) -> Result<(), SyntaxError> {
+    fn parse_until_token(&mut self) -> Result<(), SyntaxError> {
         loop {
             match self.next_char() {
                 Some(c) => match c {
@@ -121,22 +118,31 @@ impl Parser {
         }
     }
 
-    fn handle_close_event(&mut self) {
-        match self.depth_stack[..] {
-            [.., (token_open, start_index), (token_close, end_index), (COMMA, _)] => {
-                // End of array item.
+    fn handle_close(&mut self) {
+        match self.token_stack[..] {
+            [.., (BRACKET_OPEN, start_index), (BRACKET_CLOSE, end_index), (end_token, _)] => {
+                // End of array.
+                // end_token: , ] }
+            }
+            [.., (CURLY_BRACKET_OPEN, start_index), (CURLY_BRACKET_CLOSE, end_index), (end_token, _)] => {
+                // End of object.
+                // end_token: , ] } EOF
+            }
+            [.., (prim_open, start_index), (prim_close, end_index), (end_token, _)] => {
+                // End of primitive value
+                // end_token: , ] }
             }
             [.., (DOUBLE_QUOTE, start_index), (DOUBLE_QUOTE, end_index), (COLON, index)] => {
-                // object key is [start_token, end_token]
+                // end of object key is [start_index, end_index]
             }
-            // [.., (BRACKET_OPEN, index)] => {}
+            // [.., (BRACKET_CLOSE, index)] => {}
             [.., (BRACKET_CLOSE, index)] => {
                 // End of array
             }
-            // [.., (CURLY_BRACKET_OPEN, index)] => {}
+            // [.., (CURLY_BRACKET_CLOSE, index)] => {}
             [.., (CURLY_BRACKET_CLOSE, index)] => {
                 // End of object
-            }
+            } 
         }
         // TODO handle open and close events
     }
@@ -270,7 +276,7 @@ impl Parser {
     // }
 
     // fn in_value(&mut self) -> Result<(), SyntaxError> {
-    //     let local_depth_index = self.depth_stack.len() - 1;
+    //     let local_depth_index = self.token_stack.len() - 1;
     // }
 
     // fn post_value(&mut self) -> Result<(), SyntaxError> {}
