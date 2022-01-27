@@ -120,29 +120,42 @@ impl Parser {
 
     fn handle_close(&mut self) {
         match self.token_stack[..] {
+            // End of array.
             [.., (BRACKET_OPEN, start_index), (BRACKET_CLOSE, end_index), (end_token, _)] => {
-                // End of array.
                 // end_token: , ] }
             }
-            [.., (CURLY_BRACKET_OPEN, start_index), (CURLY_BRACKET_CLOSE, end_index), (end_token, _)] => {
-                // End of object.
+            [.., (CURLY_BRACKET_OPEN, start_index), (CURLY_BRACKET_CLOSE, end_index), (end_token, _)] =>
+            // End of object.
+            {
                 // end_token: , ] } EOF
             }
-            [.., (prim_open, start_index), (prim_close, end_index), (end_token, _)] => {
-                // End of primitive value
+            // End of true
+            [.., (b't', start_index), (b'r', _), (b'u', _), (b'e', end_index), (end_token, _)] => {
                 // end_token: , ] }
             }
-            [.., (DOUBLE_QUOTE, start_index), (DOUBLE_QUOTE, end_index), (COLON, index)] => {
-                // end of object key is [start_index, end_index]
+            [.., (b'f', start_index), (b'a', _), (b'l', _), (b's', _), (b'e', end_index), (end_token, _)] =>
+            // End of false
+            {
+                // end_token: , ] }
             }
-            // [.., (BRACKET_CLOSE, index)] => {}
-            [.., (BRACKET_CLOSE, index)] => {
-                // End of array
+            // End of null
+            [.., (b'n', start_index), (b'u', _), (b'l', _), (b'l', end_index), (end_token, _)] => {
+                // end_token: , ] }
             }
-            // [.., (CURLY_BRACKET_CLOSE, index)] => {}
-            [.., (CURLY_BRACKET_CLOSE, index)] => {
-                // End of object
-            } 
+            // End of number
+            [.., (prim_open, start_index), (prim_close, end_index), (end_token, _)] => {
+                // end_token: , ] }
+            } // [.., (DOUBLE_QUOTE, start_index), (DOUBLE_QUOTE, end_index), (COLON, index)] => {
+              //     // end of object key is [start_index, end_index]
+              // }
+              // // [.., (BRACKET_CLOSE, index)] => {}
+              // [.., (BRACKET_CLOSE, index)] => {
+              //     // End of array
+              // }
+              // // [.., (CURLY_BRACKET_CLOSE, index)] => {}
+              // [.., (CURLY_BRACKET_CLOSE, index)] => {
+              //     // End of object
+              // }
         }
         // TODO handle open and close events
     }
