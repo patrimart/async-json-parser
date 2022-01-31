@@ -5,14 +5,15 @@ pub const COMMA: u8 = b',';
 pub const CURLY_BRACKET_OPEN: u8 = b'{';
 pub const CURLY_BRACKET_CLOSE: u8 = b'}';
 pub const DOUBLE_QUOTE: u8 = b'"';
-// pub const PRIMITIVE_OPEN: [u8; 15] = *b"-0123456789tfn\"";
+
+// pub const NUMBERS: [u8; 11] = *b"-0123456789";
+
+// pub const CARRIAGE_RETURN: u8 = b'\r';
+// pub const NEWLINE: u8 = b'\n';
+// pub const TAB: u8 = b'\t';
+// pub const WHITE_SPACE: u8 = b' ';
 
 pub const BACK_SLASH: u8 = b'\\';
-pub const CARRIAGE_RETURN: u8 = b'\r';
-pub const NEWLINE: u8 = b'\n';
-pub const TAB: u8 = b'\t';
-pub const WHITE_SPACE: u8 = b' ';
-
 pub const UTF8_2: u8 = 0b11000000; // n & UTF8_2 === UTF8_2, Skip next byte
 pub const UTF8_3: u8 = 0b11100000; // n & UTF8_3 === UTF8_3, Skip next 2 bytes
 pub const UTF8_4: u8 = 0b11110000; // n & UTF8_4 === UTF8_4, Skip next 3 bytes

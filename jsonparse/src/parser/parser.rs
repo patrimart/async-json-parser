@@ -1,5 +1,3 @@
-use std::ops::Index;
-
 use super::{constants::*, SyntaxError};
 
 pub enum PollResponse {
@@ -44,11 +42,12 @@ impl Parser {
         loop {
             let c = *self.stream.get(self.current_index)?;
             match c {
-                BACK_SLASH | CARRIAGE_RETURN | NEWLINE | TAB | WHITE_SPACE => {
+                BRACKET_OPEN | BRACKET_CLOSE | COLON | COMMA | CURLY_BRACKET_OPEN
+                | CURLY_BRACKET_CLOSE | DOUBLE_QUOTE => {
                     self.current_index += 1;
-                    continue;
+                    return Some(c);
                 }
-                UTF8_2 => {
+                BACK_SLASH | UTF8_2 => {
                     self.current_index += 2;
                     continue;
                 }
@@ -61,8 +60,9 @@ impl Parser {
                     continue;
                 }
                 _ => {
+                    // CARRIAGE_RETURN | COMMA | NEWLINE | TAB | WHITE_SPACE
                     self.current_index += 1;
-                    return Some(c);
+                    continue;
                 }
             }
         }
@@ -121,41 +121,30 @@ impl Parser {
     fn handle_close(&mut self) {
         match self.token_stack[..] {
             // End of array.
-            [.., (BRACKET_OPEN, start_index), (BRACKET_CLOSE, end_index), (end_token, _)] => {
-                // end_token: , ] }
+            [.., (BRACKET_OPEN, start_index), (BRACKET_CLOSE, end_index)] => {
+                self.token_stack.truncate(self.token_stack.len() - 2)
             }
-            [.., (CURLY_BRACKET_OPEN, start_index), (CURLY_BRACKET_CLOSE, end_index), (end_token, _)] =>
             // End of object.
+            [.., (CURLY_BRACKET_OPEN, start_index), (CURLY_BRACKET_CLOSE, end_index)] => {
+                self.token_stack.truncate(self.token_stack.len() - 2)
+            }
+            // End of key
+            [.., (DOUBLE_QUOTE, start_index), (DOUBLE_QUOTE, end_index), (COLON, _)] => {
+                // self.token_stack.truncate(self.token_stack.len() - 3)
+            }
+            // End of object value string
+            [.., (COLON, _), (DOUBLE_QUOTE, start_index), (DOUBLE_QUOTE, end_index), (COMMA | CURLY_BRACKET_CLOSE, _)] =>
             {
-                // end_token: , ] } EOF
+                self.token_stack.truncate(self.token_stack.len() - 6)
             }
-            // End of true
-            [.., (b't', start_index), (b'r', _), (b'u', _), (b'e', end_index), (end_token, _)] => {
+            // End of object value others primitives
+            [.., (COLON, start_index), (COMMA | CURLY_BRACKET_CLOSE, end_index)] => {
+                self.token_stack.truncate(self.token_stack.len() - 3)
+            }
+            // End of array value
+            [.., (start_token, start_index), (end_token, end_index)] => {
                 // end_token: , ] }
             }
-            [.., (b'f', start_index), (b'a', _), (b'l', _), (b's', _), (b'e', end_index), (end_token, _)] =>
-            // End of false
-            {
-                // end_token: , ] }
-            }
-            // End of null
-            [.., (b'n', start_index), (b'u', _), (b'l', _), (b'l', end_index), (end_token, _)] => {
-                // end_token: , ] }
-            }
-            // End of number
-            [.., (prim_open, start_index), (prim_close, end_index), (end_token, _)] => {
-                // end_token: , ] }
-            } // [.., (DOUBLE_QUOTE, start_index), (DOUBLE_QUOTE, end_index), (COLON, index)] => {
-              //     // end of object key is [start_index, end_index]
-              // }
-              // // [.., (BRACKET_CLOSE, index)] => {}
-              // [.., (BRACKET_CLOSE, index)] => {
-              //     // End of array
-              // }
-              // // [.., (CURLY_BRACKET_CLOSE, index)] => {}
-              // [.., (CURLY_BRACKET_CLOSE, index)] => {
-              //     // End of object
-              // }
         }
         // TODO handle open and close events
     }
