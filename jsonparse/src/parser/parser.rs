@@ -8,11 +8,19 @@ pub enum PollResponse {
 
 #[derive(Debug, Clone)]
 pub struct Parser {
+    // The target to iterate.
     path_to_array: Vec<String>,
+    // The current path of current_index.
     current_path: Vec<String>,
+    // The push/pop of nested structures.
     token_stack: Vec<(u8, usize)>,
+    // The real index over the entire stream.
     current_index: usize,
-    stream: Vec<u8>,
+    // The offset of the trim
+    offset_index: usize,
+    // The data stream.
+    sink: Vec<u8>,
+    // True, if in the array targeted by `path_to_array`.
     is_in_target_array: bool,
 }
 
@@ -23,25 +31,35 @@ impl Parser {
             current_path: Vec::new(),
             token_stack: Vec::new(),
             current_index: 0,
-            stream: Vec::new(),
+            offset_index: 0,
+            sink: Vec::new(),
             is_in_target_array: false,
         }
     }
 
+    /// Append slice to the stream sink.
     pub fn push(&mut self, arr: &[u8]) {
         for item in arr.iter() {
-            self.stream.push(*item);
+            self.sink.push(*item);
         }
     }
 
+    /// TODO Not sure anymore.
     pub fn poll(&mut self) -> PollResponse {
         PollResponse::Pending
     }
 
-    fn next_char(&mut self) -> Option<u8> {
+    /// Get the real index to the sink, accounting for trimming.
+    fn index(&self) -> usize {
+        self.current_index - self.offset_index
+    }
+
+    /// Advance to the next significant char, ignoring noise.
+    fn next_char_event(&mut self) -> Option<u8> {
         loop {
-            let c = *self.stream.get(self.current_index)?;
+            let c = *self.sink.get(self.index())?;
             match c {
+                // Return significant chat.
                 BRACKET_OPEN | BRACKET_CLOSE | COLON | COMMA | CURLY_BRACKET_OPEN
                 | CURLY_BRACKET_CLOSE | DOUBLE_QUOTE => {
                     self.current_index += 1;
@@ -49,60 +67,54 @@ impl Parser {
                 }
                 BACK_SLASH | UTF8_2 => {
                     self.current_index += 2;
-                    continue;
                 }
                 UTF8_3 => {
                     self.current_index += 3;
-                    continue;
                 }
                 UTF8_4 => {
                     self.current_index += 4;
-                    continue;
                 }
                 _ => {
-                    // CARRIAGE_RETURN | COMMA | NEWLINE | TAB | WHITE_SPACE
+                    // CARRIAGE_RETURN | NEWLINE | TAB | WHITE_SPACE | Etc
                     self.current_index += 1;
-                    continue;
                 }
             }
         }
     }
 
-    /// Trims stream to `[current_index..]`.
-    fn trim_left_stream(&mut self) {
-        if self.stream.len() > self.current_index {
-            self.stream = self.stream.drain(self.current_index..).collect();
+    /// Trims stream to `[index()..]`.
+    fn trim_left_sink(&mut self) {
+        if self.sink.len() > self.index() {
+            self.offset_index += self.current_index - self.offset_index;
+            self.sink = self.sink.drain(self.index()..).collect();
         } else {
-            self.stream.clear();
+            self.offset_index = self.current_index;
+            self.sink.clear();
         }
     }
 
+    /// Push a char onto the `token_stack`.
     fn push_stack(&mut self, char: u8) {
         self.token_stack.push((char, self.current_index));
     }
 
+    /// Remove the last char from the `token_stack`.
     fn pop_stack(&mut self) {
-        self.token_stack.pop();
+        self.token_stack.truncate(self.token_stack.len() - 1);
     }
 
     fn parse_until_token(&mut self) -> Result<(), SyntaxError> {
         loop {
-            match self.next_char() {
+            match self.next_char_event() {
                 Some(c) => match c {
-                    COLON => {
-                        // End of property
-                    }
-                    COMMA => {
-                        // End of array item
-                    }
-                    DOUBLE_QUOTE => {
+                    COLON | COMMA | DOUBLE_QUOTE | BRACKET_OPEN | CURLY_BRACKET_OPEN => {
                         self.push_stack(c);
+                        return Ok(());
                     }
-                    BRACKET_OPEN | CURLY_BRACKET_OPEN => {
-                        self.push_stack(c);
-                    }
+                    // Maybe remove. Handled in handle_close()?
                     BRACKET_CLOSE | CURLY_BRACKET_CLOSE => {
                         self.pop_stack();
+                        return Ok(());
                     }
                     _ => {
                         return Err(SyntaxError::new(
@@ -118,7 +130,7 @@ impl Parser {
         }
     }
 
-    fn handle_close(&mut self) {
+    fn match_close_event(&mut self) {
         match self.token_stack[..] {
             // End of array.
             [.., (BRACKET_OPEN, start_index), (BRACKET_CLOSE, end_index)] => {
@@ -133,8 +145,7 @@ impl Parser {
                 // self.token_stack.truncate(self.token_stack.len() - 3)
             }
             // End of object value string
-            [.., (COLON, _), (DOUBLE_QUOTE, start_index), (DOUBLE_QUOTE, end_index), (COMMA | CURLY_BRACKET_CLOSE, _)] =>
-            {
+            [.., (COLON, _), (DOUBLE_QUOTE, start_index), (DOUBLE_QUOTE, end_index), (COMMA | CURLY_BRACKET_CLOSE, _)] => {
                 self.token_stack.truncate(self.token_stack.len() - 6)
             }
             // End of object value others primitives
@@ -148,140 +159,4 @@ impl Parser {
         }
         // TODO handle open and close events
     }
-
-    // fn at_start(&mut self) -> Result<(), SyntaxError> {
-    //     match self.next_char() {
-    //         Some(c) => match c {
-    //             CURLY_BRACKET_OPEN => {
-    //                 self.state = ParseState::PreKey;
-    //                 Ok(())
-    //             }
-    //             BRACKET_OPEN => {
-    //                 if let None = self.path_to_array {
-    //                     self.is_in_stream = true;
-    //                     Ok(())
-    //                 } else {
-    //                     Err(SyntaxError::new(
-    //                         self.current_index - 1,
-    //                         &format!("pathToArray provided for non-object."),
-    //                     ))
-    //                 }
-    //             }
-    //             _ => Err(SyntaxError::new(
-    //                 self.current_index - 1,
-    //                 &format!("Invalid character '{}' found at start.", c),
-    //             )),
-    //         },
-    //         None => Ok(()),
-    //     }
-    // }
-
-    // fn pre_key(&mut self) -> Result<(), SyntaxError> {
-    //     match self.next_char() {
-    //         Some(c) => match c {
-    //             DOUBLE_QUOTE => {
-    //                 self.state = ParseState::InKey;
-    //                 Ok(())
-    //             }
-    //             _ => Err(SyntaxError::new(
-    //                 self.current_index - 1,
-    //                 &format!("Invalid character '{}' found at pre key. Expected (\").", c),
-    //             )),
-    //         },
-    //         None => Ok(()),
-    //     }
-    // }
-
-    // fn in_key(&mut self) -> Result<(), SyntaxError> {
-    //     let start_index = self.current_index;
-    //     loop {
-    //         match self.next_char() {
-    //             Some(c) => match c {
-    //                 DOUBLE_QUOTE => {
-    //                     // START: Nonsense
-    //                     // The path needs to push/pop based on nested objects.
-    //                     let end_index = self.current_index - 2;
-    //                     let u8_slice = &self.stream[start_index..end_index];
-    //                     let key = str::from_utf8(u8_slice).unwrap();
-    //                     self.current_path.push(key.to_string());
-    //                     // END: Nonsend
-    //                     self.state = ParseState::PostKey;
-    //                     return Ok(());
-    //                 }
-    //                 _ => {}
-    //             },
-    //             None => {
-    //                 return Ok(());
-    //             }
-    //         }
-    //     }
-    // }
-
-    // fn post_key(&mut self) -> Result<(), SyntaxError> {
-    //     match self.next_char() {
-    //         Some(c) => match c {
-    //             COLON => {
-    //                 self.state = ParseState::PreValue;
-    //                 Ok(())
-    //             }
-    //             _ => Err(SyntaxError::new(
-    //                 self.current_index - 1,
-    //                 &format!("Invalid character '{c}' found at after key. Expected (:).",),
-    //             )),
-    //         },
-    //         None => Ok(()),
-    //     }
-    // }
-
-    // fn pre_value(&mut self) -> Result<(&[u8]), SyntaxError> {
-    //     match self.next_char() {
-    //         Some(c) => match c {
-    //             BRACKET_OPEN => {
-    //                 self.state = ParseState::InValue;
-    //                 Ok(())
-    //             }
-    //             CURLY_BRACKET_OPEN => {
-    //                 self.state = ParseState::InValue;
-    //                 Ok(())
-    //             }
-    //             DOUBLE_QUOTE => {
-    //                 self.state = ParseState::InValue;
-    //                 Ok(())
-    //             }
-    //             c if PRIMITIVE_OPEN.contains(&c) => {
-    //                 self.state = ParseState::InValue;
-    //                 let start_index = self.current_index;
-    //                 match c {
-    //                     b't' => {
-    //                         self.current_index += 3;
-    //                     }
-    //                     b'f' => {
-    //                         self.current_index += 4;
-    //                     }
-    //                     b'n' => {
-    //                         self.current_index += 3;
-    //                     }
-    //                     n => loop {},
-    //                 }
-    //                 Ok(())
-    //             }
-    //             _ => Err(SyntaxError::new(
-    //                 self.current_index - 1,
-    //                 &format!(
-    //                     "Invalid character '{}' found at pre value. Expected (\").",
-    //                     c
-    //                 ),
-    //             )),
-    //         },
-    //         None => Ok(()),
-    //     }
-    // }
-
-    // fn in_value(&mut self) -> Result<(), SyntaxError> {
-    //     let local_depth_index = self.token_stack.len() - 1;
-    // }
-
-    // fn post_value(&mut self) -> Result<(), SyntaxError> {}
-
-    // fn at_end(&mut self) -> Result<(), SyntaxError> {}
 }
