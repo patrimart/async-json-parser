@@ -54,6 +54,27 @@ impl Parser {
         self.current_index - self.offset_index
     }
 
+    /// Trims stream to `[index()..]`.
+    fn trim_left_sink(&mut self) {
+        if self.sink.len() > self.index() {
+            self.offset_index += self.current_index - self.offset_index;
+            self.sink = self.sink.drain(self.index()..).collect();
+        } else {
+            self.offset_index = self.current_index;
+            self.sink.clear();
+        }
+    }
+
+    /// Push a char onto the `token_stack`.
+    fn push_stack(&mut self, char: u8) {
+        self.token_stack.push((char, self.current_index));
+    }
+
+    /// Remove the last char from the `token_stack`.
+    fn pop_stack(&mut self) {
+        self.token_stack.truncate(self.token_stack.len() - 1);
+    }
+
     /// Advance to the next significant char, ignoring noise.
     fn next_char_event(&mut self) -> Option<u8> {
         loop {
@@ -80,27 +101,6 @@ impl Parser {
                 }
             }
         }
-    }
-
-    /// Trims stream to `[index()..]`.
-    fn trim_left_sink(&mut self) {
-        if self.sink.len() > self.index() {
-            self.offset_index += self.current_index - self.offset_index;
-            self.sink = self.sink.drain(self.index()..).collect();
-        } else {
-            self.offset_index = self.current_index;
-            self.sink.clear();
-        }
-    }
-
-    /// Push a char onto the `token_stack`.
-    fn push_stack(&mut self, char: u8) {
-        self.token_stack.push((char, self.current_index));
-    }
-
-    /// Remove the last char from the `token_stack`.
-    fn pop_stack(&mut self) {
-        self.token_stack.truncate(self.token_stack.len() - 1);
     }
 
     fn parse_until_token(&mut self) -> Result<(), SyntaxError> {
